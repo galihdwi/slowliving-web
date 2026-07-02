@@ -5,28 +5,28 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Resident extends Model
+class Houses extends Model
 {
+    protected $table = 'houses';
+
     protected $fillable = [
-        'full_name',
-        'ktp_photo_path',
-        'resident_status',
-        'phone_number',
-        'marital_status',
+        'house_number',
+        'address',
+        'house_status',
     ];
 
     public function occupancies(): HasMany
     {
-        return $this->hasMany(HouseOccupancy::class);
+        return $this->hasMany(HouseOccupancy::class, 'house_id');
     }
 
     public function invoices(): HasMany
     {
-        return $this->hasMany(Invoice::class);
+        return $this->hasMany(Invoice::class, 'house_id');
     }
 
     public function payments(): HasMany
     {
-        return $this->hasMany(Payment::class);
+        return $this->hasMany(Payment::class, 'house_id');
     }
 }
