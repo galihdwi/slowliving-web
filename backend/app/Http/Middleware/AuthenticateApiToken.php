@@ -7,7 +7,6 @@ use App\Models\ApiToken;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticateApiToken
@@ -22,8 +21,8 @@ class AuthenticateApiToken
 
         $token = ApiToken::query()
             ->with('user')
-            ->get()
-            ->first(fn (ApiToken $apiToken) => Hash::check($plainToken, $apiToken->token));
+            ->where('token', hash('sha256', $plainToken))
+            ->first();
 
         if (! $token || ! $token->user) {
             return JSendResponse::fail(['message' => 'Unauthenticated.'], 401);

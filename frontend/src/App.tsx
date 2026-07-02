@@ -1,121 +1,145 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { MobileAppBar, Sidebar, Topbar } from '@/components/layout'
+import { navigation } from '@/config/navigation'
+import { LoginPage } from '@/features/auth'
+import { DataFormModal } from '@/features/forms'
+import { useAdminData } from '@/hooks/useAdminData'
+import { useAuth } from '@/hooks/useAuth'
+import { AppRoutes } from '@/routes'
+import { expenseService, houseService, paymentService, residentService } from '@/services'
+import type { PageKey } from '@/types/admin'
+import type { ExpensePayload, HousePayload, PaymentPayload, ResidentPayload } from '@/types/api'
+import '@/styles/app.css'
+
+type FormPageKey = Extract<PageKey, 'residents' | 'houses' | 'payments' | 'expenses'>
+
+const formPages: PageKey[] = ['residents', 'houses', 'payments', 'expenses']
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activePage, setActivePage] = useState<PageKey>('dashboard')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [activeForm, setActiveForm] = useState<FormPageKey | null>(null)
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const auth = useAuth()
+  const adminData = useAdminData(auth.isAuthenticated)
+
+  const currentNav = navigation.find((item) => item.key === activePage) ?? navigation[0]
+
+  function selectPage(page: PageKey) {
+    setActivePage(page)
+    setIsSidebarOpen(false)
+  }
+
+  function openActiveForm() {
+    if (formPages.includes(activePage)) {
+      setFormError(null)
+      setActiveForm(activePage as FormPageKey)
+    }
+  }
+
+  async function handleFormSubmit(
+    type: FormPageKey,
+    payload: ResidentPayload | HousePayload | PaymentPayload | ExpensePayload,
+  ) {
+    setIsSubmittingForm(true)
+    setFormError(null)
+
+    try {
+      if (type === 'residents') {
+        await residentService.create(payload as ResidentPayload)
+      }
+
+      if (type === 'houses') {
+        await houseService.create(payload as HousePayload)
+      }
+
+      if (type === 'payments') {
+        await paymentService.create(payload as PaymentPayload)
+      }
+
+      if (type === 'expenses') {
+        await expenseService.create(payload as ExpensePayload)
+      }
+
+      setActiveForm(null)
+      await adminData.refresh()
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : 'Gagal menyimpan data.'
+      setFormError(message)
+    } finally {
+      setIsSubmittingForm(false)
+    }
+  }
+
+  if (auth.isBooting) {
+    return <div className="screen-loader">Memuat sesi...</div>
+  }
+
+  if (!auth.isAuthenticated) {
+    return <LoginPage isLoading={auth.isLoading} error={auth.error} onLogin={auth.login} />
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className={isSidebarOpen ? 'app-shell sidebar-open' : 'app-shell'}>
+      <a className="skip-link" href="#main-content">Lewati ke konten</a>
+      <button
+        type="button"
+        className="sidebar-scrim"
+        aria-label="Tutup navigasi"
+        onClick={() => setIsSidebarOpen(false)}
+      />
 
-      <div className="ticks"></div>
+      <Sidebar activePage={activePage} onSelectPage={selectPage} onClose={() => setIsSidebarOpen(false)} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <main className="main-panel" id="main-content">
+        <MobileAppBar
+          title={currentNav.label}
+          isSidebarOpen={isSidebarOpen}
+          onOpenSidebar={() => setIsSidebarOpen(true)}
+        />
+        <Topbar
+          title={currentNav.label}
+          subtitle={currentNav.hint}
+          userName={auth.user?.name}
+          canAdd={formPages.includes(activePage)}
+          onAdd={openActiveForm}
+          onLogout={auth.logout}
+        />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        {adminData.error && (
+          <div className="alert-panel">
+            <strong>Gagal mengambil data.</strong>
+            <span>{adminData.error}</span>
+            <button type="button" onClick={adminData.refresh}>Coba lagi</button>
+          </div>
+        )}
+
+        {adminData.isLoading && <div className="inline-loader">Mengambil data backend...</div>}
+
+        <AppRoutes
+          activePage={activePage}
+          totals={adminData.totals}
+          residents={adminData.residents}
+          houses={adminData.houses}
+          payments={adminData.payments}
+          expenses={adminData.expenses}
+          monthlySummary={adminData.monthlySummary}
+        />
+      </main>
+
+      {activeForm && (
+        <DataFormModal
+          type={activeForm}
+          residents={adminData.residents}
+          houses={adminData.houses}
+          isSubmitting={isSubmittingForm}
+          error={formError}
+          onClose={() => setActiveForm(null)}
+          onSubmit={handleFormSubmit}
+        />
+      )}
+    </div>
   )
 }
 
