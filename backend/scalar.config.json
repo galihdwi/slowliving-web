@@ -1,0 +1,48 @@
+{
+  "$schema": "https://registry.scalar.com/@scalar/schemas/config",
+  "scalar": "2.0.0",
+  "info": {
+    "title": "Admin Iuran RT API",
+    "description": "Dokumentasi API untuk administrasi penghuni, rumah, invoice iuran, pembayaran, pengeluaran, dan laporan RT."
+  },
+  "siteConfig": {
+    "theme": "default",
+    "head": {
+      "meta": [
+        {
+          "name": "description",
+          "content": "Dokumentasi API Admin Iuran RT berbasis Laravel."
+        }
+      ]
+    }
+  },
+  "navigation": {
+    "routes": {
+      "/": {
+        "type": "group",
+        "title": "Admin Iuran RT",
+        "mode": "flat",
+        "children": {
+          "": {
+            "type": "page",
+            "title": "Introduction",
+            "filepath": "docs/introduction.md",
+            "icon": "phosphor/regular/house"
+          },
+          "/api": {
+            "type": "openapi",
+            "title": "API Reference",
+            "filepath": "docs/openapi.yaml",
+            "icon": "phosphor/regular/notebook",
+            "mode": "nested",
+            "config": {
+              "authentication": {
+                "preferredSecurityScheme": "bearerAuth"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
