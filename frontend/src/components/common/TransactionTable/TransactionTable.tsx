@@ -2,7 +2,12 @@ import { Badge } from '@/components/common/Badge'
 import type { ActivityRow } from '@/types/admin'
 import { formatCurrency } from '@/utils/formatCurrency'
 
-export function TransactionTable({ rows }: { rows: ActivityRow[] }) {
+type TransactionTableProps = {
+  rows: ActivityRow[]
+  emptyMessage?: string
+}
+
+export function TransactionTable({ rows, emptyMessage = 'Belum ada transaksi.' }: TransactionTableProps) {
   return (
     <div className="table-scroll">
       <table className="data-table">
@@ -25,6 +30,11 @@ export function TransactionTable({ rows }: { rows: ActivityRow[] }) {
               </td>
             </tr>
           ))}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={4}>{emptyMessage}</td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

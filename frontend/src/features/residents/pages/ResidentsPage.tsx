@@ -1,12 +1,34 @@
+import { useMemo, useState } from "react";
 import { Badge, Panel, SearchField } from "@/components/common";
 import type { Resident } from "@/types/api";
 
 export function ResidentsPage({ residents }: { residents: Resident[] }) {
+  const [search, setSearch] = useState("");
+
+  const filteredResidents = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+
+    if (!keyword) {
+      return residents;
+    }
+
+    return residents.filter((resident) =>
+      [
+        resident.full_name,
+        resident.phone_number,
+        resident.resident_status === "permanent" ? "tetap" : "kontrak",
+        resident.marital_status === "married" ? "menikah" : "belum menikah",
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword)),
+    );
+  }, [residents, search]);
+
   return (
     <Panel
       title="Daftar Penghuni"
       subtitle="Daftar penghuni yang terdaftar di sistem"
-      toolbar={<SearchField placeholder="Cari penghuni" />}
+      toolbar={<SearchField placeholder="Cari penghuni" value={search} onChange={setSearch} />}
     >
       <div className="table-scroll">
         <table className="data-table">
@@ -19,7 +41,7 @@ export function ResidentsPage({ residents }: { residents: Resident[] }) {
             </tr>
           </thead>
           <tbody>
-            {residents.map((resident) => (
+            {filteredResidents.map((resident) => (
               <tr key={resident.id}>
                 <td className="primary-cell">{resident.full_name}</td>
                 <td>-</td>
@@ -33,9 +55,11 @@ export function ResidentsPage({ residents }: { residents: Resident[] }) {
                 <td>{resident.phone_number}</td>
               </tr>
             ))}
-            {residents.length === 0 && (
+            {filteredResidents.length === 0 && (
               <tr>
-                <td colSpan={4}>Belum ada data penghuni.</td>
+                <td colSpan={4}>
+                  {search ? "Penghuni tidak ditemukan." : "Belum ada data penghuni."}
+                </td>
               </tr>
             )}
           </tbody>
