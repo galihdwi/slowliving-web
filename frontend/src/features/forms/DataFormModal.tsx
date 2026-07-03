@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import type { ExpensePayload, House, HousePayload, PaymentPayload, Resident, ResidentPayload } from '@/types/api'
+import type { Expense, ExpensePayload, House, HousePayload, PaymentPayload, Resident, ResidentPayload } from '@/types/api'
 import type { PageKey } from '@/types/admin'
 
 type FormPageKey = Extract<PageKey, 'residents' | 'houses' | 'payments' | 'expenses'>
 
 type DataFormModalProps = {
   type: FormPageKey
+  mode?: 'create' | 'edit'
+  initialData?: Resident | House | Expense | null
   residents: Resident[]
   houses: House[]
   isSubmitting: boolean
@@ -22,8 +24,17 @@ const formTitles: Record<FormPageKey, string> = {
   expenses: 'Tambah Pengeluaran',
 }
 
+const editFormTitles: Record<FormPageKey, string> = {
+  residents: 'Ubah Penghuni',
+  houses: 'Ubah Rumah',
+  payments: 'Tambah Pembayaran',
+  expenses: 'Ubah Pengeluaran',
+}
+
 export function DataFormModal({
   type,
+  mode = 'create',
+  initialData = null,
   residents,
   houses,
   isSubmitting,
@@ -32,17 +43,20 @@ export function DataFormModal({
   onSubmit,
 }: DataFormModalProps) {
   const today = new Date().toISOString().slice(0, 10)
+  const initialResident = type === 'residents' ? initialData as Resident | null : null
+  const initialHouse = type === 'houses' ? initialData as House | null : null
+  const initialExpense = type === 'expenses' ? initialData as Expense | null : null
   const [residentPayload, setResidentPayload] = useState<ResidentPayload>({
-    full_name: '',
-    resident_status: 'permanent',
-    phone_number: '',
-    marital_status: 'single',
+    full_name: initialResident?.full_name ?? '',
+    resident_status: initialResident?.resident_status ?? 'permanent',
+    phone_number: initialResident?.phone_number ?? '',
+    marital_status: initialResident?.marital_status ?? 'single',
     ktp_photo: null,
   })
   const [housePayload, setHousePayload] = useState<HousePayload>({
-    house_number: '',
-    address: '',
-    house_status: 'vacant',
+    house_number: initialHouse?.house_number ?? '',
+    address: initialHouse?.address ?? '',
+    house_status: initialHouse?.house_status ?? 'vacant',
   })
   const [paymentPayload, setPaymentPayload] = useState<PaymentPayload>({
     resident_id: residents[0]?.id ?? 0,
@@ -53,10 +67,11 @@ export function DataFormModal({
     notes: '',
   })
   const [expensePayload, setExpensePayload] = useState<ExpensePayload>({
-    expense_category_name: '',
-    expense_date: today,
-    amount: 0,
-    description: '',
+    expense_category_id: initialExpense?.expense_category_id ?? null,
+    expense_category_name: initialExpense?.category?.name ?? '',
+    expense_date: initialExpense?.expense_date ?? today,
+    amount: Number(initialExpense?.amount ?? 0),
+    description: initialExpense?.description ?? '',
     proof: null,
   })
 
@@ -65,8 +80,20 @@ export function DataFormModal({
       return paymentPayload.resident_id > 0 && paymentPayload.house_id > 0
     }
 
+    if (type === 'residents') {
+      return Boolean(residentPayload.full_name && residentPayload.phone_number)
+    }
+
+    if (type === 'houses') {
+      return Boolean(housePayload.house_number)
+    }
+
+    if (type === 'expenses') {
+      return Boolean(expensePayload.expense_date && expensePayload.amount > 0 && expensePayload.description)
+    }
+
     return true
-  }, [paymentPayload.house_id, paymentPayload.resident_id, type])
+  }, [expensePayload.amount, expensePayload.description, expensePayload.expense_date, housePayload.house_number, paymentPayload.house_id, paymentPayload.resident_id, residentPayload.full_name, residentPayload.phone_number, type])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -96,7 +123,7 @@ export function DataFormModal({
         <div className="form-modal-header">
           <div>
             <p className="eyebrow">Input Data</p>
-            <h2 id="data-form-title">{formTitles[type]}</h2>
+            <h2 id="data-form-title">{mode === 'edit' ? editFormTitles[type] : formTitles[type]}</h2>
           </div>
           <button type="button" className="form-close-button" onClick={onClose}>Close</button>
         </div>
@@ -149,6 +176,7 @@ export function DataFormModal({
                   accept="image/png,image/jpeg"
                   onChange={(event) => setResidentPayload((payload) => ({ ...payload, ktp_photo: event.target.files?.[0] ?? null }))}
                 />
+                {mode === 'edit' && <span className="field-hint">Kosongkan jika foto KTP tidak berubah.</span>}
               </label>
             </>
           )}
@@ -300,6 +328,7 @@ export function DataFormModal({
                   accept="image/png,image/jpeg,application/pdf"
                   onChange={(event) => setExpensePayload((payload) => ({ ...payload, proof: event.target.files?.[0] ?? null }))}
                 />
+                {mode === 'edit' && <span className="field-hint">Kosongkan jika bukti tidak berubah.</span>}
               </label>
             </>
           )}

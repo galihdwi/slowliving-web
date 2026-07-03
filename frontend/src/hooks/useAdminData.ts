@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { expenseService, houseService, paymentService, reportService, residentService } from '@/services'
-import type { Expense, House, MonthlySummaryItem, Payment, Resident, Totals } from '@/types/api'
+import { expenseService, houseService, invoiceService, paymentService, reportService, residentService } from '@/services'
+import type { Expense, House, Invoice, MonthlySummaryItem, Payment, Resident, Totals } from '@/types/api'
 
 type AdminDataState = {
   residents: Resident[]
   houses: House[]
   payments: Payment[]
+  invoices: Invoice[]
   expenses: Expense[]
   monthlySummary: MonthlySummaryItem[]
 }
@@ -14,6 +15,7 @@ const emptyState: AdminDataState = {
   residents: [],
   houses: [],
   payments: [],
+  invoices: [],
   expenses: [],
   monthlySummary: [],
 }
@@ -33,10 +35,11 @@ export function useAdminData(isEnabled: boolean) {
     setError(null)
 
     try {
-      const [residents, houses, payments, expenses, summary] = await Promise.all([
+      const [residents, houses, payments, invoices, expenses, summary] = await Promise.all([
         residentService.list({ per_page: 100 }),
         houseService.list({ per_page: 100 }),
         paymentService.list({ per_page: 100 }),
+        invoiceService.list({ per_page: 100 }),
         expenseService.list({ per_page: 100 }),
         reportService.monthlySummary(new Date().getFullYear()),
       ])
@@ -45,6 +48,7 @@ export function useAdminData(isEnabled: boolean) {
         residents: residents.items,
         houses: houses.items,
         payments: payments.items,
+        invoices: invoices.items,
         expenses: expenses.items,
         monthlySummary: summary.items,
       })

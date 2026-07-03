@@ -74,6 +74,12 @@ export type House = {
   occupancies?: HouseOccupancy[]
 }
 
+export type HouseDetail = {
+  houses: House
+  occupancy_history: HouseOccupancy[]
+  payment_history: Invoice[]
+}
+
 export type HousePayload = {
   house_number: string
   address?: string | null
@@ -145,6 +151,12 @@ export type Payment = PaymentPayload & {
   id: number
   house?: House
   resident?: Resident
+  allocations?: Array<{
+    id: number
+    payment_id: number
+    invoice_item_id: number
+    amount: number | string
+  }>
 }
 
 export type ExpensePayload = {
@@ -163,6 +175,10 @@ export type Expense = {
   amount: number | string
   description: string
   proof_path?: string | null
+  category?: {
+    id: number
+    name: string
+  } | null
 }
 
 export type MonthlySummaryItem = {

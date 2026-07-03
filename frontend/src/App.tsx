@@ -2,23 +2,29 @@ import { useState } from 'react'
 import { MobileAppBar, Sidebar, Topbar } from '@/components/layout'
 import { navigation } from '@/config/navigation'
 import { LoginPage } from '@/features/auth'
-import { DataFormModal } from '@/features/forms'
+import { DataFormModal, OccupancyFormModal } from '@/features/forms'
 import { useAdminData } from '@/hooks/useAdminData'
 import { useAuth } from '@/hooks/useAuth'
 import { AppRoutes } from '@/routes'
 import { expenseService, houseService, paymentService, residentService } from '@/services'
 import type { PageKey } from '@/types/admin'
-import type { ExpensePayload, HousePayload, PaymentPayload, ResidentPayload } from '@/types/api'
+import type { Expense, ExpensePayload, House, HouseOccupancyPayload, HousePayload, PaymentPayload, Resident, ResidentPayload } from '@/types/api'
 import '@/styles/app.css'
 
 type FormPageKey = Extract<PageKey, 'residents' | 'houses' | 'payments' | 'expenses'>
+type ActiveFormState = {
+  type: FormPageKey
+  mode: 'create' | 'edit'
+  record?: Resident | House | Expense
+}
 
 const formPages: PageKey[] = ['residents', 'houses', 'payments', 'expenses']
 
 function App() {
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [activeForm, setActiveForm] = useState<FormPageKey | null>(null)
+  const [activeForm, setActiveForm] = useState<ActiveFormState | null>(null)
+  const [activeOccupancyHouse, setActiveOccupancyHouse] = useState<House | null>(null)
   const [isSubmittingForm, setIsSubmittingForm] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const auth = useAuth()
@@ -34,8 +40,13 @@ function App() {
   function openActiveForm() {
     if (formPages.includes(activePage)) {
       setFormError(null)
-      setActiveForm(activePage as FormPageKey)
+      setActiveForm({ type: activePage as FormPageKey, mode: 'create' })
     }
+  }
+
+  function openEditForm(type: FormPageKey, record: Resident | House | Expense) {
+    setFormError(null)
+    setActiveForm({ type, mode: 'edit', record })
   }
 
   async function handleFormSubmit(
@@ -47,11 +58,19 @@ function App() {
 
     try {
       if (type === 'residents') {
-        await residentService.create(payload as ResidentPayload)
+        if (activeForm?.mode === 'edit' && activeForm.record) {
+          await residentService.update(activeForm.record.id, payload as ResidentPayload)
+        } else {
+          await residentService.create(payload as ResidentPayload)
+        }
       }
 
       if (type === 'houses') {
-        await houseService.create(payload as HousePayload)
+        if (activeForm?.mode === 'edit' && activeForm.record) {
+          await houseService.update(activeForm.record.id, payload as HousePayload)
+        } else {
+          await houseService.create(payload as HousePayload)
+        }
       }
 
       if (type === 'payments') {
@@ -59,13 +78,33 @@ function App() {
       }
 
       if (type === 'expenses') {
-        await expenseService.create(payload as ExpensePayload)
+        if (activeForm?.mode === 'edit' && activeForm.record) {
+          await expenseService.update(activeForm.record.id, payload as ExpensePayload)
+        } else {
+          await expenseService.create(payload as ExpensePayload)
+        }
       }
 
       setActiveForm(null)
       await adminData.refresh()
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : 'Gagal menyimpan data.'
+      setFormError(message)
+    } finally {
+      setIsSubmittingForm(false)
+    }
+  }
+
+  async function handleOccupancySubmit(houseId: number, payload: HouseOccupancyPayload) {
+    setIsSubmittingForm(true)
+    setFormError(null)
+
+    try {
+      await houseService.createOccupancy(houseId, payload)
+      setActiveOccupancyHouse(null)
+      await adminData.refresh()
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : 'Gagal menyimpan penghuni rumah.'
       setFormError(message)
     } finally {
       setIsSubmittingForm(false)
@@ -123,20 +162,43 @@ function App() {
           residents={adminData.residents}
           houses={adminData.houses}
           payments={adminData.payments}
+          invoices={adminData.invoices}
           expenses={adminData.expenses}
           monthlySummary={adminData.monthlySummary}
+          onEditResident={(resident) => openEditForm('residents', resident)}
+          onEditHouse={(house) => openEditForm('houses', house)}
+          onEditExpense={(expense) => openEditForm('expenses', expense)}
+          onManageOccupancy={(house) => {
+            setFormError(null)
+            setActiveOccupancyHouse(house)
+          }}
         />
       </main>
 
       {activeForm && (
         <DataFormModal
-          type={activeForm}
+          key={`${activeForm.type}-${activeForm.mode}-${activeForm.record?.id ?? 'new'}`}
+          type={activeForm.type}
+          mode={activeForm.mode}
+          initialData={activeForm.record ?? null}
           residents={adminData.residents}
           houses={adminData.houses}
           isSubmitting={isSubmittingForm}
           error={formError}
           onClose={() => setActiveForm(null)}
           onSubmit={handleFormSubmit}
+        />
+      )}
+
+      {activeOccupancyHouse && (
+        <OccupancyFormModal
+          key={activeOccupancyHouse.id}
+          house={activeOccupancyHouse}
+          residents={adminData.residents}
+          isSubmitting={isSubmittingForm}
+          error={formError}
+          onClose={() => setActiveOccupancyHouse(null)}
+          onSubmit={handleOccupancySubmit}
         />
       )}
     </div>

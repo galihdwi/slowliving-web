@@ -24,6 +24,12 @@ class HousesController extends Controller
         $status = $request->query('status', '');
 
         $query = Houses::query();
+        $query->with([
+            'occupancies' => fn ($query) => $query
+                ->with('resident')
+                ->whereNull('end_date')
+                ->latest(),
+        ]);
 
         if ($search) {
             $query->where('house_number', 'like', "%{$search}%");

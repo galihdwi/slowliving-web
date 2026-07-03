@@ -1,8 +1,14 @@
 import { useMemo, useState } from "react";
 import { Badge, Panel, SearchField } from "@/components/common";
+import { Button } from "@/components/ui/button";
 import type { Resident } from "@/types/api";
 
-export function ResidentsPage({ residents }: { residents: Resident[] }) {
+type ResidentsPageProps = {
+  residents: Resident[];
+  onEditResident: (resident: Resident) => void;
+};
+
+export function ResidentsPage({ residents, onEditResident }: ResidentsPageProps) {
   const [search, setSearch] = useState("");
 
   const filteredResidents = useMemo(() => {
@@ -38,6 +44,7 @@ export function ResidentsPage({ residents }: { residents: Resident[] }) {
               <th>Rumah</th>
               <th>Status</th>
               <th>Telepon</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -53,11 +60,16 @@ export function ResidentsPage({ residents }: { residents: Resident[] }) {
                   </Badge>
                 </td>
                 <td>{resident.phone_number}</td>
+                <td>
+                  <Button type="button" size="xs" variant="outline" onClick={() => onEditResident(resident)}>
+                    Ubah
+                  </Button>
+                </td>
               </tr>
             ))}
             {filteredResidents.length === 0 && (
               <tr>
-                <td colSpan={4}>
+                <td colSpan={5}>
                   {search ? "Penghuni tidak ditemukan." : "Belum ada data penghuni."}
                 </td>
               </tr>

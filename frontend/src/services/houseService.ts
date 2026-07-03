@@ -1,6 +1,6 @@
 import { api } from './api'
 import { unwrapJSend } from './jsend'
-import type { House, HouseOccupancy, HouseOccupancyPayload, HousePayload, JSendResponse, PaginatedData } from '@/types/api'
+import type { House, HouseDetail, HouseOccupancy, HouseOccupancyPayload, HousePayload, JSendResponse, PaginatedData } from '@/types/api'
 
 export const houseService = {
   async list(params?: Record<string, string | number | undefined>) {
@@ -14,8 +14,8 @@ export const houseService = {
   },
 
   async get(id: number) {
-    const response = await api.get<JSendResponse<{ houses: House }>>(`/houses/${id}`)
-    return unwrapJSend(response.data).houses
+    const response = await api.get<JSendResponse<HouseDetail>>(`/houses/${id}`)
+    return unwrapJSend(response.data)
   },
 
   async update(id: number, payload: HousePayload) {

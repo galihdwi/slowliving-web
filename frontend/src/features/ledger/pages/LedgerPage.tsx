@@ -12,6 +12,7 @@ type LedgerPageProps = {
   type: ActivityRow["type"];
   payments: Payment[];
   expenses: Expense[];
+  onEditExpense?: (expense: Expense) => void;
 };
 
 export function LedgerPage({
@@ -19,6 +20,7 @@ export function LedgerPage({
   type,
   payments,
   expenses,
+  onEditExpense,
 }: LedgerPageProps) {
   const [search, setSearch] = useState("");
 
@@ -53,6 +55,8 @@ export function LedgerPage({
       <TransactionTable
         rows={filteredRows}
         emptyMessage={search ? "Transaksi tidak ditemukan." : "Belum ada transaksi."}
+        expenses={type === "Pengeluaran" ? expenses : undefined}
+        onEditExpense={onEditExpense}
       />
     </Panel>
   );
